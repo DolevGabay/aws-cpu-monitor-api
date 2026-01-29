@@ -2,6 +2,14 @@
 
 ## Setup
 
+### (Optional but Recommended) Create a Virtual Environment
+
+```bash
+python -m venv venv
+source venv/bin/activate  # macOS / Linux
+```
+
+### Installation
 ```bash
 pip install -r requirements.txt 
 ```
