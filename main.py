@@ -1,11 +1,10 @@
 import logging
-from datetime import datetime
-from typing import Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
+from objects.cpu_metrics_query import CpuMetricsQuery
 from objects.datapoint import Datapoint
 from services.cpu_metrics_service import CpuMetricsService
 
@@ -23,18 +22,18 @@ cpu_metrics_service = CpuMetricsService()
 
 @app.get("/")
 def root():
-    return {"message": "AWS CPU Monitor API", "docs": "/docs"}
+    return {"message": "AWS CPU Monitor API"}
 
 @app.get("/cpu-metrics", response_model=list[Datapoint])
-def get_cpu_metrics(ip_address: str, start_time: datetime, interval_seconds: int, end_time: Optional[datetime] = None):
+def get_cpu_metrics(query: CpuMetricsQuery = Depends()):
     try:
-        logger.info("Getting cpu metrics for ip=%s start_time=%s interval_seconds=%s end_time=%s", ip_address, start_time, interval_seconds, end_time)
+        logger.info("Getting cpu metrics query=%s", query.model_dump())
 
         datapoints = cpu_metrics_service.get_cpu_metrics(
-            ip_address=ip_address,
-            start_time=start_time,
-            interval_seconds=interval_seconds,
-            end_time = end_time
+            ip_address=query.ip_address,
+            start_time=query.start_time,
+            interval_seconds=query.interval_seconds,
+            end_time=query.end_time
         )
 
         logger.info("Successfully returned %s datapoints", len(datapoints))
@@ -43,7 +42,7 @@ def get_cpu_metrics(ip_address: str, start_time: datetime, interval_seconds: int
         logger.warning(f"Client error: {e.status_code} - {e.detail}")
         raise
     except Exception as e:
-        logger.exception(f"Unexpected error for ip={ip_address}")
+        logger.exception(f"Unexpected error for ip={query.ip_address}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 if __name__ == "__main__":
